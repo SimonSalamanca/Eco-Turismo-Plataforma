@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ecoturismo_test
+      POSTGRES_USER: ecoturismo
+      POSTGRES_PASSWORD: ecoturismo123
+    ports:
+      - "5432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecoturismo -d ecoturismo_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: ecoturismo_backend_test
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://ecoturismo:ecoturismo123@postgres:5432/ecoturismo_test
+      REDIS_URL: redis://redis:6379
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_placeholder
+      AES_SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      USE_MIGRATIONS: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm test
+
+volumes:
+  postgres_test_data:
+  redis_test_data:

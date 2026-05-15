@@ -1,0 +1,1456 @@
+openapi: 3.0.3
+info:
+  title: Eco Turismo Experiencial API
+  description: |
+    API REST para la plataforma de reservas de alojamientos rurales y actividades de naturaleza en Colombia.
+    
+    ## Características
+    - Autenticación JWT con RS256
+    - Reservas con bloqueo optimista
+    - Pagos con Stripe
+    - Suscripciones con planes (basic, premium, pro)
+    - Búsqueda geoespacial con radio de búsqueda
+    
+    ## Autenticación
+    Todos los endpoints protegidos requieren un token JWT en el header:
+    ```
+    Authorization: Bearer <token>
+    ```
+  version: 1.0.0
+  contact:
+    name: Soporte Eco Turismo
+    email: soporte@ecoturismo.com
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Servidor de desarrollo
+  - url: https://api.ecoturismo.com/api/v1
+    description: Servidor de producción
+
+tags:
+  - name: Auth
+    description: Endpoints de autenticación y registro
+  - name: Users
+    description: Gestión de perfiles de usuario
+  - name: Listings
+    description: Alojamientos y actividades
+  - name: Availability
+    description: Disponibilidad de listings
+  - name: Reservations
+    description: Reservas y reservas de usuarios
+  - name: Payments
+    description: Pagos con Stripe
+  - name: Reviews
+    description: Reseñas y calificaciones
+  - name: Subscriptions
+    description: Planes de suscripción
+  - name: Admin
+    description: Funciones administrativas
+  - name: Search
+    description: Búsqueda avanzada
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT con firma RS256
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: ERROR_CODE
+            message:
+              type: string
+            details:
+              type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        phone:
+          type: string
+        profile_photo_url:
+          type: string
+        role:
+          type: string
+          enum: [tourist, host, admin, local_business]
+        status:
+          type: string
+          enum: [pending_verification, active, suspended]
+        email_verified_at:
+          type: string
+          format: date-time
+
+    UserRegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - full_name
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          description: Mínimo 8 caracteres, mayúscula, minúscula y número
+        full_name:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [tourist, host, local_business]
+          default: tourist
+        business_type:
+          type: string
+          enum: [accommodation, activity, both]
+
+    UserLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            token:
+              type: string
+            refreshToken:
+              type: string
+
+    Listing:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        host_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        type:
+          type: string
+          enum: [accommodation, activity]
+        description:
+          type: string
+        price_per_unit:
+          type: integer
+          description: Precio en COP
+        capacity:
+          type: integer
+        categories:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, paused, deleted]
+        latitude:
+          type: number
+        longitude:
+          type: number
+        address:
+          type: string
+        department:
+          type: string
+        municipality:
+          type: string
+        photos:
+          type: array
+          items:
+            type: object
+        average_rating:
+          type: number
+          format: decimal
+        review_count:
+          type: integer
+        badge:
+          type: string
+          enum: [none, premium, pro]
+
+    ListingCreateRequest:
+      type: object
+      required:
+        - title
+        - type
+        - price_per_unit
+        - capacity
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [accommodation, activity]
+        description:
+          type: string
+        price_per_unit:
+          type: integer
+        capacity:
+          type: integer
+        categories:
+          type: array
+          items:
+            type: string
+        address:
+          type: string
+        department:
+          type: string
+        municipality:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        listing_id:
+          type: string
+          format: uuid
+        tourist_id:
+          type: string
+          format: uuid
+        host_id:
+          type: string
+          format: uuid
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        guests_count:
+          type: integer
+        subtotal:
+          type: integer
+        platform_fee:
+          type: integer
+        total_amount:
+          type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        confirmation_code:
+          type: string
+
+    ReservationCreateRequest:
+      type: object
+      required:
+        - listing_id
+        - check_in_date
+        - check_out_date
+        - guests_count
+      properties:
+        listing_id:
+          type: string
+          format: uuid
+        check_in_date:
+          type: string
+          format: date
+        check_out_date:
+          type: string
+          format: date
+        guests_count:
+          type: integer
+          minimum: 1
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        amount:
+          type: integer
+        platform_commission:
+          type: integer
+        host_payout:
+          type: integer
+        currency:
+          type: string
+          default: COP
+        status:
+          type: string
+          enum: [pending, succeeded, failed, refunded]
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        reservation_id:
+          type: string
+          format: uuid
+        listing_id:
+          type: string
+          format: uuid
+        tourist_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          maxLength: 500
+        host_response:
+          type: string
+        is_published:
+          type: boolean
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        host_id:
+          type: string
+          format: uuid
+        plan:
+          type: string
+          enum: [basic, premium, pro]
+        billing_cycle:
+          type: string
+          enum: [monthly, annual]
+        status:
+          type: string
+          enum: [active, cancelled, past_due, trialing]
+        current_period_start:
+          type: string
+          format: date-time
+        current_period_end:
+          type: string
+          format: date-time
+
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+          enum: [basic, premium, pro]
+        name:
+          type: string
+        price:
+          type: integer
+        features:
+          type: array
+          items:
+            type: string
+
+    Availability:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        listing_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [available, blocked, special_price]
+        special_price:
+          type: integer
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Registrar nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegisterRequest'
+      responses:
+        201:
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        409:
+          description: Email ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+      responses:
+        200:
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        401:
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: Cuenta bloqueada o suspendida
+
+  /auth/verify-email/{token}:
+    get:
+      tags:
+        - Auth
+      summary: Verificar correo electrónico
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Email verificado exitosamente
+        400:
+          description: Token inválido
+
+  /auth/refresh-token:
+    post:
+      tags:
+        - Auth
+      summary: Renovar token de acceso
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Nuevo token generado
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Auth
+      summary: Solicitar recuperación de contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        200:
+          description: Si el email existe, recibirá el enlace de recuperación
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Restablecer contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        200:
+          description: Contraseña actualizada
+        400:
+          description: Token inválido o expirado
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Obtener perfil del usuario autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    put:
+      tags:
+        - Users
+      summary: Actualizar datos personales
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        200:
+          description: Datos actualizados
+
+  /users/me/photo:
+    put:
+      tags:
+        - Users
+      summary: Subir foto de perfil
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Foto actualizada
+
+  /users/me/host-profile:
+    put:
+      tags:
+        - Users
+      summary: Actualizar perfil de host
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                business_name:
+                  type: string
+                business_type:
+                  type: string
+                  enum: [accommodation, activity, both]
+                department:
+                  type: string
+                municipality:
+                  type: string
+                description:
+                  type: string
+      responses:
+        200:
+          description: Perfil de host actualizado
+
+  /listings:
+    get:
+      tags:
+        - Listings
+      summary: Buscar listings con filtros
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [accommodation, activity]
+        - name: department
+          in: query
+          schema:
+            type: string
+        - name: municipality
+          in: query
+          schema:
+            type: string
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: integer
+            enum: [5, 10, 25, 50]
+        - name: price_min
+          in: query
+          schema:
+            type: integer
+        - name: price_max
+          in: query
+          schema:
+            type: integer
+        - name: capacity
+          in: query
+          schema:
+            type: integer
+        - name: min_rating
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, price_asc, price_desc, rating]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Lista de listings
+
+    post:
+      tags:
+        - Listings
+      summary: Crear nuevo listing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingCreateRequest'
+      responses:
+        201:
+          description: Listing creado
+
+  /listings/{id}:
+    get:
+      tags:
+        - Listings
+      summary: Obtener detalle de un listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Detalle del listing
+        404:
+          description: Listing no encontrado
+
+    put:
+      tags:
+        - Listings
+      summary: Actualizar listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Listing actualizado
+
+    delete:
+      tags:
+        - Listings
+      summary: Eliminar listing (soft delete)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Listing eliminado
+
+  /listings/map:
+    get:
+      tags:
+        - Listings
+      summary: Obtener listings para mapa
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: department
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Lista de listings con coordenadas
+
+  /listings/my:
+    get:
+      tags:
+        - Listings
+      summary: Obtener listings del host autenticado
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Lista de listings del host
+
+  /listings/{id}/photos:
+    post:
+      tags:
+        - Listings
+      summary: Subir fotos al listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        200:
+          description: Fotos añadidas
+
+  /listings/{id}/availability:
+    get:
+      tags:
+        - Availability
+      summary: Obtener disponibilidad del mes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Disponibilidad del mes
+
+    put:
+      tags:
+        - Availability
+      summary: Actualizar disponibilidad
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+                status:
+                  type: string
+                  enum: [available, blocked]
+                special_price:
+                  type: integer
+      responses:
+        200:
+          description: Disponibilidad actualizada
+
+  /reservations:
+    post:
+      tags:
+        - Reservations
+      summary: Crear nueva reserva
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCreateRequest'
+      responses:
+        201:
+          description: Reserva creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        409:
+          description: Conflicto de fechas
+
+  /reservations/my:
+    get:
+      tags:
+        - Reservations
+      summary: Obtener mis reservas (turista)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Lista de reservas
+
+  /reservations/host:
+    get:
+      tags:
+        - Reservations
+      summary: Obtener reservas recibidas (host)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Lista de reservas
+
+  /reservations/{id}:
+    get:
+      tags:
+        - Reservations
+      summary: Obtener detalle de reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Detalle de la reserva
+
+  /reservations/{id}/cancel:
+    post:
+      tags:
+        - Reservations
+      summary: Cancelar reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        200:
+          description: Reserva cancelada
+
+  /payments/create-intent:
+    post:
+      tags:
+        - Payments
+      summary: Crear PaymentIntent de Stripe
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reservation_id:
+                  type: string
+                  format: uuid
+      responses:
+        200:
+          description: PaymentIntent creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  client_secret:
+                    type: string
+                  payment_intent_id:
+                    type: string
+
+  /payments/webhook:
+    post:
+      tags:
+        - Payments
+      summary: Webhook de Stripe para confirmación de pagos
+      responses:
+        200:
+          description: Webhook procesado
+
+  /payments/my:
+    get:
+      tags:
+        - Payments
+      summary: Historial de pagos del turista
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Lista de pagos
+
+  /reviews:
+    post:
+      tags:
+        - Reviews
+      summary: Crear reseña
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reservation_id:
+                  type: string
+                  format: uuid
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        201:
+          description: Reseña creada
+
+  /reviews/listing/{listingId}:
+    get:
+      tags:
+        - Reviews
+      summary: Obtener reseñas de un listing
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Lista de reseñas
+
+  /reviews/{id}/response:
+    put:
+      tags:
+        - Reviews
+      summary: Responder a una reseña (solo host)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                response:
+                  type: string
+      responses:
+        200:
+          description: Respuesta añadida
+
+  /reviews/{id}/report:
+    post:
+      tags:
+        - Reviews
+      summary: Reportar reseña como inapropiada
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        201:
+          description: Reporte creado
+
+  /subscriptions/plans:
+    get:
+      tags:
+        - Subscriptions
+      summary: Obtener planes disponibles
+      responses:
+        200:
+          description: Lista de planes
+
+  /subscriptions/my:
+    get:
+      tags:
+        - Subscriptions
+      summary: Obtener suscripción activa
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Suscripción actual
+
+  /subscriptions/subscribe:
+    post:
+      tags:
+        - Subscriptions
+      summary: Iniciar suscripción
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                  enum: [basic, premium, pro]
+                billing_cycle:
+                  type: string
+                  enum: [monthly, annual]
+                  default: monthly
+      responses:
+        201:
+          description: Suscripción creada
+
+  /subscriptions/upgrade:
+    post:
+      tags:
+        - Subscriptions
+      summary: Cambiar a plan superior
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                  enum: [premium, pro]
+      responses:
+        200:
+          description: Plan actualizado
+
+  /subscriptions/downgrade:
+    post:
+      tags:
+        - Subscriptions
+      summary: Cambiar a plan inferior
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                  enum: [basic, premium]
+      responses:
+        200:
+          description: Plan actualizado (aplica al siguiente ciclo)
+
+  /subscriptions/cancel:
+    delete:
+      tags:
+        - Subscriptions
+      summary: Cancelar suscripción
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Suscripción cancelada
+
+  /subscriptions/reactivate:
+    post:
+      tags:
+        - Subscriptions
+      summary: Reactivar suscripción cancelada
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Suscripción reactivada
+
+  /admin/dashboard:
+    get:
+      tags:
+        - Admin
+      summary: Métricas generales del dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Métricas del dashboard
+
+  /admin/users:
+    get:
+      tags:
+        - Admin
+      summary: Listar usuarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: email
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Lista de usuarios
+
+  /admin/users/{id}/status:
+    put:
+      tags:
+        - Admin
+      summary: Cambiar status de usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, suspended]
+      responses:
+        200:
+          description: Status actualizado
+
+  /admin/listings:
+    get:
+      tags:
+        - Admin
+      summary: Listar publicaciones
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Lista de listings
+
+  /admin/listings/{id}/status:
+    put:
+      tags:
+        - Admin
+      summary: Cambiar status de publicación
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, paused, deleted]
+      responses:
+        200:
+          description: Status actualizado
+
+  /admin/reports:
+    get:
+      tags:
+        - Admin
+      summary: Listar reportes de contenido
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Lista de reportes
+
+  /admin/reports/{id}:
+    put:
+      tags:
+        - Admin
+      summary: Resolver reporte
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [approve, edit, remove]
+      responses:
+        200:
+          description: Reporte resuelto
+
+  /admin/subscriptions:
+    get:
+      tags:
+        - Admin
+      summary: Listar suscripciones activas
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Lista de suscripciones
+
+  /admin/subscriptions/export:
+    get:
+      tags:
+        - Admin
+      summary: Exportar suscripciones a CSV
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Archivo CSV
+
+  /admin/audit-logs:
+    get:
+      tags:
+        - Admin
+      summary: Consultar logs de auditoría
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: entity_type
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        200:
+          description: Lista de logs
+
+  /search:
+    get:
+      tags:
+        - Search
+      summary: Búsqueda avanzada
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Resultados de búsqueda

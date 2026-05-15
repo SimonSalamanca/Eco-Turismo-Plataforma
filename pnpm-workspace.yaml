@@ -1,0 +1,10 @@
+packages:
+  - 'backend'
+  - 'frontend'
+allowBuilds:
+  '@scarf/scarf': false
+  bcrypt: false
+  cypress: true
+  esbuild: true
+  sharp: false
+  vue-demi: true
