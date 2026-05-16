@@ -2,20 +2,50 @@
   <div class="host-layout">
     <header class="app-header">
       <div class="header-content">
+        <button class="hamburger-btn" @click="toggleSidebar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
         <h1 class="logo">Eco Turismo</h1>
         <div class="header-actions">
-          <button class="icon-button" @click="goToNotifications">
+          <button class="icon-button desktop-only" @click="goToNotifications">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
           </button>
-          <div class="avatar" @click="goToProfile">
-            {{ userInitials }}
+          <div class="profile-dropdown" @click="toggleProfileDropdown">
+            <div class="avatar">{{ userInitials }}</div>
+            <div v-if="showProfileDropdown" class="dropdown-menu">
+              <router-link to="/host/profile" class="dropdown-item" @click="showProfileDropdown = false">
+                Mi Perfil
+              </router-link>
+              <button class="dropdown-item" @click="logout">Cerrar Sesión</button>
+            </div>
           </div>
         </div>
       </div>
     </header>
+
+    <aside class="sidebar" :class="{ open: sidebarOpen }">
+      <div class="sidebar-overlay" @click="closeSidebar"></div>
+      <nav class="sidebar-nav">
+        <router-link
+          v-for="item in navItems"
+          :key="item.route"
+          :to="item.route"
+          class="sidebar-item"
+          :class="{ active: isActive(item.route) }"
+          @click="closeSidebar"
+        >
+          <component :is="item.icon" class="sidebar-icon" />
+          <span>{{ item.label }}</span>
+        </router-link>
+      </nav>
+    </aside>
 
     <main class="main-content">
       <router-view v-slot="{ Component }">
@@ -25,7 +55,7 @@
       </router-view>
     </main>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav mobile-only">
       <router-link
         v-for="item in navItems"
         :key="item.route"
@@ -41,7 +71,7 @@
 </template>
 
 <script setup>
-import { computed, h } from 'vue'
+import { ref, computed, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -49,12 +79,33 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const sidebarOpen = ref(false)
+const showProfileDropdown = ref(false)
+
 const userInitials = computed(() => {
   if (authStore.user?.name) {
     return authStore.user.name.split(' ').map(n => n[0]).join('').toUpperCase()
   }
   return 'H'
 })
+
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value
+}
+
+function closeSidebar() {
+  sidebarOpen.value = false
+}
+
+function toggleProfileDropdown() {
+  showProfileDropdown.value = !showProfileDropdown.value
+}
+
+async function logout() {
+  showProfileDropdown.value = false
+  await authStore.logout()
+  router.push('/login')
+}
 
 const DashboardIcon = {
   render() {
@@ -269,5 +320,149 @@ function goToProfile() {
 .slide-leave-to {
   transform: translateX(-20px);
   opacity: 0;
+}
+
+.hamburger-btn {
+  display: none;
+  background: transparent;
+  padding: var(--spacing-xs);
+  color: var(--color-white);
+}
+
+.profile-dropdown {
+  position: relative;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--color-white);
+  border-radius: var(--radius-small);
+  box-shadow: var(--shadow-card);
+  min-width: 150px;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-md);
+  text-align: left;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.dropdown-item:hover {
+  background: var(--color-surface);
+}
+
+.sidebar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .desktop-only {
+    display: flex;
+  }
+
+  .mobile-only {
+    display: none;
+  }
+
+  .logo {
+    margin-left: var(--spacing-sm);
+  }
+
+  .header-content {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+  }
+
+  .sidebar {
+    display: block;
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    background: var(--color-white);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    z-index: 150;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: none;
+  }
+
+  .sidebar.open .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: -1;
+  }
+
+  .sidebar-nav {
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-small);
+    transition: all 0.2s;
+  }
+
+  .sidebar-item:hover {
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+  }
+
+  .sidebar-item.active {
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+
+  .sidebar-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .main-content {
+    margin-left: auto;
+    margin-right: auto;
+    padding: var(--spacing-xl);
+    width: 100%;
+    max-width: var(--container-max-width);
+  }
 }
 </style>

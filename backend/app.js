@@ -56,6 +56,8 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms', 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api-docs.json', (req, res) => {
   res.json(swaggerSpec);

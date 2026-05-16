@@ -249,4 +249,33 @@ onMounted(async () => {
   font-size: 14px;
   color: var(--color-text-secondary);
 }
+
+@media (min-width: 1024px) {
+  .home-view {
+    padding: var(--spacing-xl);
+  }
+
+  .premium-scroll {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    overflow-x: visible;
+    gap: var(--spacing-lg);
+  }
+
+  .categories-scroll {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .listings-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-lg);
+  }
+
+  .section-header h2 {
+    font-size: 24px;
+  }
+}
 </style>

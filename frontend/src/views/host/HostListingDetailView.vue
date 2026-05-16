@@ -10,6 +10,12 @@
         </button>
         <h1>Detalles del Alojamiento</h1>
         <div class="header-actions">
+          <button v-if="listing.status === 'active'" class="btn-icon warning" @click="toggleStatus('paused')" title="Inactivar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+          </button>
+          <button v-else-if="listing.status === 'paused'" class="btn-icon success" @click="toggleStatus('active')" title="Activar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </button>
           <button class="btn-icon" @click="editListing">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
           </button>
@@ -175,6 +181,19 @@ async function deleteListing() {
   }
 }
 
+async function toggleStatus(newStatus) {
+  const action = newStatus === 'paused' ? 'inactivar' : 'activar'
+  if (!confirm(`¿Estás seguro de que quieres ${action} este alojamiento?`)) return
+
+  try {
+    await listingsService.update(route.params.id, { status: newStatus })
+    listing.value.status = newStatus
+  } catch (err) {
+    console.error('Error toggling status:', err)
+    alert('Error al cambiar el estado del alojamiento')
+  }
+}
+
 onMounted(() => {
   loadListing()
   loadStats()
@@ -192,6 +211,8 @@ onMounted(() => {
 .header-actions { display: flex; gap: var(--spacing-sm); }
 .btn-icon { padding: var(--spacing-sm); background: var(--color-surface); border: none; border-radius: var(--radius-small); cursor: pointer; }
 .btn-icon.danger { color: var(--color-danger); }
+.btn-icon.warning { color: var(--color-warning); }
+.btn-icon.success { color: var(--color-success); }
 
 .photos-section { margin-bottom: var(--spacing-lg); }
 .main-photo { width: 100%; height: 250px; border-radius: var(--radius-medium); overflow: hidden; margin-bottom: var(--spacing-sm); }

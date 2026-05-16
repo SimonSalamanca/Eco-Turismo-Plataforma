@@ -72,6 +72,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function resetPassword(token, password) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await authService.resetPassword(token, password)
+      return response
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   function checkAuth() {
     if (token.value) {
       authService.getProfile()
@@ -118,6 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     verify2FA,
     forgotPassword,
+    resetPassword,
     checkAuth,
     logout,
     updateProfile

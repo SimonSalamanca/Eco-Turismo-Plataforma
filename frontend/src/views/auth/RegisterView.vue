@@ -11,86 +11,88 @@
     </header>
 
     <div class="register-content">
-      <p class="subtitle">Únete a nuestra comunidad</p>
+      <div class="form-container">
+        <p class="subtitle">Únete a nuestra comunidad</p>
 
-      <div class="role-selector">
-        <label class="role-label">Selecciona tu rol</label>
-        <div class="role-options">
-          <button
-            type="button"
-            class="role-card"
-            :class="{ active: form.role === 'tourist' }"
-            @click="form.role = 'tourist'"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="role-selector">
+          <label class="role-label">Selecciona tu rol</label>
+          <div class="role-options">
+            <button
+              type="button"
+              class="role-card"
+              :class="{ active: form.role === 'tourist' }"
+              @click="form.role = 'tourist'"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Turista</span>
+            </button>
+            <button
+              type="button"
+              class="role-card"
+              :class="{ active: form.role === 'host' }"
+              @click="form.role = 'host'"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Anfitrión</span>
+            </button>
+          </div>
+        </div>
+
+        <form @submit.prevent="handleRegister" class="register-form">
+          <div class="input-wrapper">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
-            <span>Turista</span>
-          </button>
-          <button
-            type="button"
-            class="role-card"
-            :class="{ active: form.role === 'host' }"
-            @click="form.role = 'host'"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            <input v-model="form.name" type="text" class="input-field" placeholder="Nombre completo" required />
+          </div>
+
+          <div class="input-wrapper">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
             </svg>
-            <span>Anfitrión</span>
+            <input v-model="form.email" type="email" class="input-field" placeholder="Correo electrónico" required />
+          </div>
+
+          <div class="input-wrapper">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            <input v-model="form.phone" type="tel" class="input-field" placeholder="Teléfono" required />
+          </div>
+
+          <div class="input-wrapper">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input v-model="form.password" type="password" class="input-field" placeholder="Contraseña" required />
+          </div>
+
+          <div class="input-wrapper">
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input v-model="form.confirmPassword" type="password" class="input-field" placeholder="Confirmar contraseña" required />
+          </div>
+
+          <button type="submit" class="btn btn-primary" :disabled="loading">
+            {{ loading ? 'Creando...' : 'Crear Cuenta' }}
           </button>
-        </div>
+
+          <p class="login-text">
+            ¿Ya tienes cuenta? <router-link to="/login" class="link">Inicia Sesión</router-link>
+          </p>
+        </form>
       </div>
-
-      <form @submit.prevent="handleRegister" class="register-form">
-        <div class="input-wrapper">
-          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          <input v-model="form.name" type="text" class="input-field" placeholder="Nombre completo" required />
-        </div>
-
-        <div class="input-wrapper">
-          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-            <polyline points="22,6 12,13 2,6"></polyline>
-          </svg>
-          <input v-model="form.email" type="email" class="input-field" placeholder="Correo electrónico" required />
-        </div>
-
-        <div class="input-wrapper">
-          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-          </svg>
-          <input v-model="form.phone" type="tel" class="input-field" placeholder="Teléfono" required />
-        </div>
-
-        <div class="input-wrapper">
-          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-          <input v-model="form.password" type="password" class="input-field" placeholder="Contraseña" required />
-        </div>
-
-        <div class="input-wrapper">
-          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-          <input v-model="form.confirmPassword" type="password" class="input-field" placeholder="Confirmar contraseña" required />
-        </div>
-
-        <button type="submit" class="btn btn-primary" :disabled="loading">
-          {{ loading ? 'Creando...' : 'Crear Cuenta' }}
-        </button>
-
-        <p class="login-text">
-          ¿Ya tienes cuenta? <router-link to="/login" class="link">Inicia Sesión</router-link>
-        </p>
-      </form>
     </div>
   </div>
 </template>
@@ -176,12 +178,20 @@ function goBack() {
 
 .register-content {
   padding: var(--spacing-xl) var(--spacing-lg);
+  display: flex;
+  justify-content: center;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 480px;
 }
 
 .subtitle {
   color: var(--color-text-secondary);
   font-size: 14px;
   margin-bottom: var(--spacing-xl);
+  text-align: center;
 }
 
 .role-selector {
@@ -246,6 +256,11 @@ function goBack() {
 
 .btn-primary {
   margin-top: var(--spacing-md);
+  width: 100%;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
 }
 
 .login-text {

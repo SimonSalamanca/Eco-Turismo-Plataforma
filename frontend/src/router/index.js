@@ -25,6 +25,12 @@ const routes = [
     meta: { guest: true }
   },
   {
+    path: '/reset-password/:token',
+    name: 'ResetPassword',
+    component: () => import('@/views/auth/ResetPasswordView.vue'),
+    meta: { guest: true }
+  },
+  {
     path: '/verify-2fa',
     name: 'Verify2FA',
     component: () => import('@/views/auth/Verify2FAView.vue'),

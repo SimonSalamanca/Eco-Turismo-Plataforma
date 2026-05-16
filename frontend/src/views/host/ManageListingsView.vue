@@ -34,7 +34,6 @@
         </div>
         <div class="listing-actions" @click.stop>
           <span class="status-badge" :class="listing.status">{{ getStatusLabel(listing.status) }}</span>
-          <button class="action-btn" @click="editListing(listing.id)">Editar</button>
         </div>
       </div>
     </div>
