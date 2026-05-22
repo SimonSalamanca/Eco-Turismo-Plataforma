@@ -1,5 +1,32 @@
 const adminService = require('./admin.service');
 
+const getUserDetail = async (req, res, next) => {
+  try {
+    const result = await adminService.getUserDetail(req.params.id);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getReportDetail = async (req, res, next) => {
+  try {
+    const result = await adminService.getReportDetail(req.params.id);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getHostSubscriptionHistory = async (req, res, next) => {
+  try {
+    const result = await adminService.getHostSubscriptionHistory(req.params.hostId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getDashboard = async (req, res, next) => {
   try {
     const metrics = await adminService.getDashboard();
@@ -104,7 +131,8 @@ const applyDiscount = async (req, res, next) => {
     const result = await adminService.applyDiscount(
       req.params.hostId,
       req.body.coupon_code,
-      req.body.discount_percent
+      req.body.discount_percent,
+      req.userId
     );
     res.json({ success: true, ...result });
   } catch (error) {
@@ -136,12 +164,15 @@ module.exports = {
   getDashboard,
   getSubscriptionMetrics,
   getUsers,
+  getUserDetail,
   updateUserStatus,
   getListings,
   updateListingStatus,
   getReports,
+  getReportDetail,
   resolveReport,
   getSubscriptions,
+  getHostSubscriptionHistory,
   applyDiscount,
   exportSubscriptions,
   getAuditLogs

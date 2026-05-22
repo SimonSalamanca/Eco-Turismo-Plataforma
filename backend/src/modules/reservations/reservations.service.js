@@ -328,9 +328,11 @@ const markAsCompleted = async () => {
   const reservations = await Reservation.findAll({
     where: {
       status: 'confirmed',
-      check_out_date: { [Op.lt]: yesterdayDate }
+      check_out_date: { [Op.lte]: yesterdayDate }
     }
   });
+
+  console.log(`[markAsCompleted] Encontradas ${reservations.length} reservas con check_out <= ${yesterdayDate}:`, reservations.map(r => ({ id: r.id, check_out: r.check_out_date })));
 
   for (const reservation of reservations) {
     reservation.status = 'completed';
@@ -339,6 +341,28 @@ const markAsCompleted = async () => {
   }
 
   return { count: reservations.length };
+};
+
+const completeReservation = async (reservationId) => {
+  const reservation = await Reservation.findByPk(reservationId);
+
+  if (!reservation) {
+    throw new AppError('Reserva no encontrada', 404, 'NOT_FOUND');
+  }
+
+  if (reservation.status === 'completed') {
+    throw new AppError('La reserva ya está completada', 400, 'ALREADY_COMPLETED');
+  }
+
+  if (reservation.status !== 'confirmed') {
+    throw new AppError('Solo se pueden completar reservas confirmadas', 400, 'INVALID_STATUS');
+  }
+
+  reservation.status = 'completed';
+  reservation.completed_at = new Date();
+  await reservation.save();
+
+  return reservation;
 };
 
 const confirmReservation = async (reservationId, hostId) => {
@@ -363,6 +387,24 @@ const confirmReservation = async (reservationId, hostId) => {
 
   reservation.status = 'confirmed';
   await reservation.save();
+
+  const existingPayment = await Payment.findOne({ where: { reservation_id: reservation.id } });
+  if (existingPayment) {
+    if (existingPayment.status === 'pending') {
+      existingPayment.status = 'succeeded';
+      await existingPayment.save();
+    }
+  } else {
+    await Payment.create({
+      reservation_id: reservation.id,
+      tourist_id: reservation.tourist_id,
+      amount: reservation.total_amount,
+      platform_commission: reservation.platform_fee,
+      host_payout: reservation.subtotal,
+      currency: env.platform.currency,
+      status: 'succeeded'
+    });
+  }
 
   const notificationService = require('../notifications/notifications.service');
   if (reservation.tourist) {
@@ -493,6 +535,7 @@ module.exports = {
   getReservationById,
   cancelReservation,
   markAsCompleted,
+  completeReservation,
   confirmReservation,
   rejectReservation,
   getHostReservationsByListing

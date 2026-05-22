@@ -30,6 +30,11 @@ const updateListingSchema = Joi.object({
 
 const searchQuerySchema = Joi.object({
   type: Joi.string().valid('accommodation', 'activity').optional(),
+  q: Joi.string().max(200).optional(),
+  category: Joi.alternatives().try(
+    Joi.string(),
+    Joi.array().items(Joi.string())
+  ).optional(),
   department: Joi.string().optional(),
   municipality: Joi.string().optional(),
   lat: Joi.number().min(-90).max(90).optional(),

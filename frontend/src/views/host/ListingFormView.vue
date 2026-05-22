@@ -128,7 +128,7 @@ const typeOptions = [
   { value: 'activity', label: 'Actividad' }
 ]
 
-const amenities = ['WiFi', 'Piscina', 'Estacionamiento', 'Cocina', 'Aire acondicionado', 'Terraza', 'Mascotas', 'Desayuno']
+const amenities = ['WiFi', 'Piscina', 'Estacionamiento', 'Cocina', 'Aire acondicionado', 'Terraza', 'Chimenea', 'Lavadora', 'TV', 'Parrilla', 'Jardín', 'Mascotas', 'Desayuno']
 
 const MAX_PHOTO_SIZE = 10 * 1024 * 1024
 

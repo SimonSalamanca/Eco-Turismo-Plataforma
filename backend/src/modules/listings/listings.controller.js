@@ -58,7 +58,8 @@ const createListing = async (req, res, next) => {
 
 const updateListing = async (req, res, next) => {
   try {
-    const listing = await listingsService.updateListing(req.params.id, req.userId, req.body);
+    const isAdmin = req.userRole === 'admin';
+    const listing = await listingsService.updateListing(req.params.id, req.userId, req.body, isAdmin);
     res.json({ success: true, data: listing, message: 'Listing actualizado' });
   } catch (error) {
     next(error);

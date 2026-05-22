@@ -49,8 +49,8 @@ export const useReservationsStore = defineStore('reservations', () => {
     loading.value = true
     try {
       const response = await reservationsService.getById(id)
-      currentReservation.value = response.reservation
-      return response.reservation
+      currentReservation.value = response
+      return response
     } catch (err) {
       error.value = err.message
       throw err

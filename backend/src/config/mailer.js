@@ -122,14 +122,23 @@ const sendReservationConfirmation = async (email, reservation, listing, user) =>
   return sendEmail(email, 'Reserva confirmada - Eco Turismo', html);
 };
 
-const sendReviewNotification = async (email, listingTitle, rating) => {
+const sendReviewNotification = async ({ email, listingTitle, rating, touristName, commentExcerpt, hostDashboardUrl }) => {
   const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
   const html = `
-    <h1>Nueva reseña recibida</h1>
-    <p>Has recibido una nueva reseña para <strong>${listingTitle}</strong></p>
+    <h1>Recibiste una nueva reseña en ${listingTitle}</h1>
+    <p><strong>${touristName || 'Un turista'}</strong> ha dejado una reseña para tu alojamiento <strong>${listingTitle}</strong>.</p>
     <p>Calificación: ${stars} (${rating}/5)</p>
+    ${commentExcerpt ? `<p><em>"${commentExcerpt}"</em></p>` : ''}
+    <p style="margin-top: 20px;">
+      <a href="${hostDashboardUrl || '/host/dashboard'}" style="background: #2E7D32; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+        Ver y responder reseña
+      </a>
+    </p>
+    <p style="margin-top: 10px; color: #666; font-size: 12px;">
+      Eco Turismo Experiencial — Panel del anfitrión
+    </p>
   `;
-  return sendEmail(email, 'Nueva reseña - Eco Turismo', html);
+  return sendEmail(email, `Recibiste una nueva reseña en ${listingTitle}`, html);
 };
 
 const sendAccountBlockedEmail = async (email, name) => {

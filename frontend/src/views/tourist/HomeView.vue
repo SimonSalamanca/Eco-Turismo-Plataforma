@@ -97,11 +97,13 @@ const selectedCategory = ref('all')
 
 const categories = [
   { label: 'Todo', value: 'all' },
-  { label: 'Casas', value: 'house' },
-  { label: 'Apartamentos', value: 'apartment' },
-  { label: 'Cabañas', value: 'cabin' },
-  { label: 'Villas', value: 'villa' },
-  { label: 'Lofts', value: 'loft' }
+  { label: 'WiFi', value: 'WiFi' },
+  { label: 'Piscina', value: 'Piscina' },
+  { label: 'Estacionamiento', value: 'Estacionamiento' },
+  { label: 'Cocina', value: 'Cocina' },
+  { label: 'Aire acondicionado', value: 'Aire acondicionado' },
+  { label: 'Terraza', value: 'Terraza' },
+  { label: 'Mascotas', value: 'Mascotas' }
 ]
 
 const featuredListings = computed(() => listingsStore.featuredListings)
@@ -129,7 +131,7 @@ function isHostPremium(listing) {
 function selectCategory(value) {
   selectedCategory.value = value
   if (value !== 'all') {
-    listingsStore.setFilters({ category: value })
+    listingsStore.setFilters({ amenities: [value] })
     router.push('/tourist/search')
   }
 }

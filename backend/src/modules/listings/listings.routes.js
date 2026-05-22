@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const listingsController = require('./listings.controller');
 const { authenticate, optionalAuth, authorize } = require('../../middleware/auth.middleware');
-const { validateSchema } = require('../../utils/validation.utils');
+const { validateSchema, validateQuery } = require('../../utils/validation.utils');
 const { createListingSchema, updateListingSchema, searchQuerySchema } = require('./listings.dto');
 const upload = require('../../middleware/multer.middleware');
 const { handleUpload } = require('../../middleware/upload.middleware');
 
-router.get('/', optionalAuth, validateSchema(searchQuerySchema, 'query'), listingsController.getListings);
+router.get('/', optionalAuth, validateQuery(searchQuerySchema), listingsController.getListings);
 router.get('/featured', listingsController.getFeaturedListings);
 router.get('/top-rated', listingsController.getTopRatedListings);
 router.get('/map', listingsController.getMapListings);

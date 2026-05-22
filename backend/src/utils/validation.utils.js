@@ -8,13 +8,12 @@ const validateSchema = (schema) => {
     });
 
     if (error) {
-      console.log('Validation error details:', error.details);
       const details = error.details.map(d => ({
         field: d.path.join('.'),
         message: d.message
       }));
-      console.log('Validation failed:', JSON.stringify(details));
-      return next(new ValidationError('Error de validación', details));
+      const summary = details.map(d => `${d.field}: ${d.message}`).join('; ');
+      return next(new ValidationError(`Error de validación: ${summary}`, details));
     }
 
     req.body = value;

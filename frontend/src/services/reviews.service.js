@@ -3,12 +3,17 @@ import api from './api'
 export default {
   async getByListing(listingId, params = {}) {
     const { data } = await api.get(`/reviews/listing/${listingId}`, { params: { ...params, _t: Date.now() } })
-    return data
+    return data.data || data
   },
 
-  async getUserReviews() {
-    const { data } = await api.get('/reviews/my-reviews')
-    return data
+  async getMyReviews() {
+    const { data } = await api.get('/reviews/my')
+    return data.data || data
+  },
+
+  async getHostReviews(params = {}) {
+    const { data } = await api.get('/reviews/host', { params })
+    return data.data || data
   },
 
   async create(reviewData) {
@@ -16,18 +21,8 @@ export default {
     return data
   },
 
-  async update(id, reviewData) {
-    const { data } = await api.put(`/reviews/${id}`, reviewData)
-    return data
-  },
-
-  async delete(id) {
-    const { data } = await api.delete(`/reviews/${id}`)
-    return data
-  },
-
-  async respond(id, responseText) {
-    const { data } = await api.post(`/reviews/${id}/respond`, { response: responseText })
+  async respond(id, reply) {
+    const { data } = await api.post(`/reviews/${id}/reply`, { reply })
     return data
   },
 

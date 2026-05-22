@@ -51,7 +51,7 @@ const createListing = async (hostId, data) => {
   const plan = hostProfile?.subscription_plan || 'basic';
   const planLimits = env.plans[plan];
 
-  const listingCount = await Listing.count({ where: { host_id: hostId, status: { [Op.ne]: 'deleted' } } });
+  const listingCount = await Listing.count({ where: { host_id: hostId, status: 'active' } });
   if (planLimits.listings && listingCount >= planLimits.listings) {
     throw new AppError(`Límite de listings alcanzado para el plan ${plan}`, 400, 'PLAN_LIMIT');
   }
@@ -125,7 +125,11 @@ const searchListings = async (params) => {
   }
 
   if (params.category) {
-    where.categories = { [Op.contains]: [params.category] };
+    const categories = Array.isArray(params.category) ? params.category : [params.category];
+    const escaped = categories.map(c => sequelize.escape(String(c)));
+    where.categories = sequelize.literal(
+      `"Listing"."categories" @> ARRAY[${escaped.join(',')}]::text[]`
+    );
   }
 
   let order;
@@ -242,14 +246,14 @@ const getListingsMap = async (params) => {
   return listings.filter(l => l.latitude && l.longitude);
 };
 
-const updateListing = async (id, hostId, data) => {
+const updateListing = async (id, hostId, data, isAdmin = false) => {
   const listing = await Listing.findByPk(id);
 
   if (!listing) {
     throw new AppError('Listing no encontrado', 404, 'NOT_FOUND');
   }
 
-  if (listing.host_id !== hostId && req.user?.role !== 'admin') {
+  if (listing.host_id !== hostId && !isAdmin) {
     throw new AppError('No tienes permiso para editar este listing', 403, 'FORBIDDEN');
   }
 

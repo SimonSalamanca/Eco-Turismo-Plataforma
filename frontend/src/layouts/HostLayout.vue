@@ -178,11 +178,26 @@ const UserIcon = {
   }
 }
 
+const ReviewsIcon = {
+  render() {
+    return h('svg', {
+      width: 24, height: 24, viewBox: '0 0 24 24',
+      fill: 'none', stroke: 'currentColor', 'stroke-width': 2
+    }, [
+      h('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }),
+      h('path', { d: 'M8 10h.01' }),
+      h('path', { d: 'M12 10h.01' }),
+      h('path', { d: 'M16 10h.01' })
+    ])
+  }
+}
+
 const navItems = [
   { route: '/host/dashboard', label: 'Dashboard', icon: DashboardIcon },
   { route: '/host/listings', label: 'Publicaciones', icon: ListingsIcon },
   { route: '/host/reservations', label: 'Reservas', icon: ReservationsIcon },
   { route: '/host/calendar', label: 'Calendario', icon: CalendarIcon },
+  { route: '/host/reviews', label: 'Reseñas', icon: ReviewsIcon },
   { route: '/host/profile', label: 'Perfil', icon: UserIcon }
 ]
 

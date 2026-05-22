@@ -26,6 +26,14 @@ ContentReport.init({
     type: DataTypes.STRING(500),
     allowNull: false
   },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  resolution_note: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   status: {
     type: DataTypes.ENUM('pending', 'approved', 'edited', 'removed'),
     defaultValue: 'pending'

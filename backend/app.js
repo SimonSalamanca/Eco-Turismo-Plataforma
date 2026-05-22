@@ -101,6 +101,7 @@ app.use('/api/v1/listings/:id/availability', availabilityRoutes);
 app.use('/api/v1/reservations', reservationsRoutes);
 app.use('/api/v1/payments', paymentsRoutes);
 app.use('/api/v1/reviews', reviewsRoutes);
+app.use('/api/v1/reports', require('./src/modules/reports/reports.routes'));
 app.use('/api/v1/subscriptions', subscriptionsRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/notifications', notificationsRoutes);

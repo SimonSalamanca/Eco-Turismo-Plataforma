@@ -5,7 +5,11 @@ const { Op } = require('sequelize');
 const { cacheDelete } = require('../../config/redis');
 
 const createReview = async (touristId, data) => {
-  const reservation = await Reservation.findByPk(data.reservation_id);
+  const reservation = await Reservation.findByPk(data.reservation_id, {
+    include: [
+      { model: Listing, as: 'listing', attributes: ['id', 'title', 'host_id'] }
+    ]
+  });
 
   if (!reservation) {
     throw new AppError('Reserva no encontrada', 404, 'NOT_FOUND');
@@ -16,7 +20,7 @@ const createReview = async (touristId, data) => {
   }
 
   if (reservation.status !== 'completed') {
-    throw new AppError('Solo puedes reseñar reservas completadas', 400, 'INVALID_STATUS');
+    throw new AppError('Solo puedes calificar experiencias completadas', 400, 'INVALID_STATUS');
   }
 
   const existingReview = await Review.findOne({
@@ -24,7 +28,7 @@ const createReview = async (touristId, data) => {
   });
 
   if (existingReview) {
-    throw new ConflictError('Ya has reseñado esta reserva', 'REVIEW_EXISTS');
+    throw new ConflictError('Ya calificaste esta experiencia', 'REVIEW_EXISTS');
   }
 
   const review = await sequelize.transaction(async (t) => {
@@ -57,11 +61,22 @@ const createReview = async (touristId, data) => {
     return newReview;
   });
 
-  const listing = await Listing.findByPk(reservation.listing_id);
-  const host = await User.findByPk(listing.host_id);
+  const tourist = await User.findByPk(touristId, { attributes: ['full_name'] });
+  const host = await User.findByPk(reservation.listing.host_id, { attributes: ['email'] });
 
   if (host) {
-    await sendReviewNotification(host.email, listing.title, data.rating);
+    const excerpt = data.comment
+      ? data.comment.substring(0, 150) + (data.comment.length > 150 ? '...' : '')
+      : '';
+
+    await sendReviewNotification({
+      email: host.email,
+      listingTitle: reservation.listing.title,
+      rating: data.rating,
+      touristName: tourist?.full_name || 'Un turista',
+      commentExcerpt: excerpt,
+      hostDashboardUrl: '/host/dashboard'
+    });
   }
 
   await cacheDelete(`listing:${reservation.listing_id}`);
@@ -69,9 +84,14 @@ const createReview = async (touristId, data) => {
   return review;
 };
 
-const getListingReviews = async (listingId) => {
-  const reviews = await Review.findAll({
-    where: { listing_id: listingId, is_published: true },
+const getListingReviews = async (listingId, query) => {
+  const { page = 1, limit = 10 } = query;
+  const offset = (page - 1) * limit;
+
+  const where = { listing_id: listingId, is_published: true };
+
+  const { count, rows } = await Review.findAndCountAll({
+    where,
     include: [
       {
         model: User,
@@ -79,13 +99,110 @@ const getListingReviews = async (listingId) => {
         attributes: ['id', 'full_name', 'profile_photo_url']
       }
     ],
+    order: [['created_at', 'DESC']],
+    limit: parseInt(limit),
+    offset
+  });
+
+  const avgResult = await Review.findOne({
+    where: { listing_id: listingId, is_published: true },
+    attributes: [
+      [sequelize.fn('AVG', sequelize.col('rating')), 'avg']
+    ],
+    raw: true
+  });
+
+  return {
+    summary: {
+      average_rating: parseFloat(avgResult?.avg || 0),
+      total_reviews: count
+    },
+    reviews: rows,
+    pagination: {
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total_pages: Math.ceil(count / limit)
+    }
+  };
+};
+
+const getMyReviews = async (touristId) => {
+  const reviews = await Review.findAll({
+    where: { tourist_id: touristId },
+    include: [
+      {
+        model: Listing,
+        as: 'listing',
+        attributes: ['id', 'title', 'photos']
+      }
+    ],
     order: [['created_at', 'DESC']]
   });
 
-  return reviews;
+  return reviews.map(r => ({
+    ...r.toJSON(),
+    listing: r.listing
+      ? { ...r.listing.toJSON(), photo: r.listing.photos?.[0] || null }
+      : null
+  }));
 };
 
-const respondToReview = async (reviewId, hostId, response) => {
+const getHostReviews = async (hostId, query) => {
+  const { listing_id, page = 1, limit = 10 } = query;
+  const offset = (page - 1) * limit;
+
+  const hostListings = await Listing.findAll({
+    where: { host_id: hostId },
+    attributes: ['id'],
+    raw: true
+  });
+  const listingIds = hostListings.map(l => l.id);
+
+  if (listingIds.length === 0) {
+    return { data: [], pagination: { total: 0, page: 1, limit: 10, total_pages: 0 } };
+  }
+
+  const where = { listing_id: { [Op.in]: listingIds } };
+  if (listing_id) where.listing_id = listing_id;
+
+  const { count, rows } = await Review.findAndCountAll({
+    where,
+    include: [
+      {
+        model: User,
+        as: 'tourist',
+        attributes: ['id', 'full_name', 'profile_photo_url']
+      },
+      {
+        model: Listing,
+        as: 'listing',
+        attributes: ['id', 'title']
+      }
+    ],
+    order: [
+      [sequelize.literal('"host_response" IS NULL'), 'DESC'],
+      ['created_at', 'DESC']
+    ],
+    limit: parseInt(limit),
+    offset
+  });
+
+  return {
+    data: rows.map(r => ({
+      ...r.toJSON(),
+      has_response: r.host_response !== null
+    })),
+    pagination: {
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total_pages: Math.ceil(count / limit)
+    }
+  };
+};
+
+const respondToReview = async (reviewId, hostId, reply) => {
   const review = await Review.findByPk(reviewId, {
     include: [{ model: Listing, as: 'listing' }]
   });
@@ -95,14 +212,14 @@ const respondToReview = async (reviewId, hostId, response) => {
   }
 
   if (review.listing.host_id !== hostId) {
-    throw new ForbiddenError('Solo el anfitrión puede responder');
+    throw new ForbiddenError('Solo el anfitrión dueño del listing puede responder');
   }
 
   if (review.host_response) {
-    throw new ConflictError('Ya has respondido a esta reseña', 'ALREADY_RESPONDED');
+    throw new ConflictError('Ya respondiste esta reseña', 'ALREADY_RESPONDED');
   }
 
-  review.host_response = response;
+  review.host_response = reply;
   review.host_responded_at = new Date();
   await review.save();
 
@@ -142,6 +259,8 @@ const reportReview = async (reviewId, reporterId, reason) => {
 module.exports = {
   createReview,
   getListingReviews,
+  getMyReviews,
+  getHostReviews,
   respondToReview,
   reportReview
 };

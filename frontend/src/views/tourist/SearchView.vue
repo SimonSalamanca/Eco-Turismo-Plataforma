@@ -52,11 +52,11 @@
 
       <div class="categories-scroll">
         <button
-          v-for="cat in categories"
+          v-for="cat in amenityOptions"
           :key="cat.value"
           class="btn-pill"
-          :class="{ active: filters.category === cat.value }"
-          @click="selectCategory(cat.value)"
+          :class="{ active: filters.amenities.includes(cat.value) }"
+          @click="toggleAmenity(cat.value)"
         >
           {{ cat.label }}
         </button>
@@ -124,17 +124,17 @@
         </div>
 
         <div class="filter-group">
-          <label>Tipo de alojamiento</label>
-          <div class="type-options">
-            <button
-              v-for="t in propertyTypes"
-              :key="t.value"
-              class="type-btn"
-              :class="{ active: filters.propertyType === t.value }"
-              @click="filters.propertyType = filters.propertyType === t.value ? '' : t.value"
+          <label>Amenidades</label>
+          <div class="amenity-options">
+            <label
+              v-for="a in amenityOptions"
+              :key="a.value"
+              class="amenity-checkbox"
+              :class="{ active: filters.amenities.includes(a.value) }"
             >
-              {{ t.label }}
-            </button>
+              <input type="checkbox" :value="a.value" v-model="filters.amenities" />
+              <span>{{ a.label }}</span>
+            </label>
           </div>
         </div>
 
@@ -214,31 +214,29 @@ const showMoreFilters = ref(false)
 const today = new Date().toISOString().split('T')[0]
 
 const filters = ref({
-  category: '',
+  amenities: [],
   checkIn: '',
   checkOut: '',
   guests: 1,
   minPrice: null,
   maxPrice: null,
-  minRating: 0,
-  propertyType: ''
+  minRating: 0
 })
 
-const categories = [
-  { label: 'Todo', value: '' },
-  { label: 'Casas', value: 'house' },
-  { label: 'Apartamentos', value: 'apartment' },
-  { label: 'Cabañas', value: 'cabin' },
-  { label: 'Villas', value: 'villa' },
-  { label: 'Lofts', value: 'loft' }
-]
-
-const propertyTypes = [
-  { label: 'Casa', value: 'house' },
-  { label: 'Apartamento', value: 'apartment' },
-  { label: 'Cabaña', value: 'cabin' },
-  { label: 'Villa', value: 'villa' },
-  { label: 'Loft', value: 'loft' }
+const amenityOptions = [
+  { label: 'WiFi', value: 'WiFi' },
+  { label: 'Piscina', value: 'Piscina' },
+  { label: 'Estacionamiento', value: 'Estacionamiento' },
+  { label: 'Cocina', value: 'Cocina' },
+  { label: 'Aire acondicionado', value: 'Aire acondicionado' },
+  { label: 'Terraza', value: 'Terraza' },
+  { label: 'Chimenea', value: 'Chimenea' },
+  { label: 'Lavadora', value: 'Lavadora' },
+  { label: 'TV', value: 'TV' },
+  { label: 'Parrilla', value: 'Parrilla' },
+  { label: 'Jardín', value: 'Jardín' },
+  { label: 'Mascotas', value: 'Mascotas' },
+  { label: 'Desayuno', value: 'Desayuno' }
 ]
 
 const results = computed(() => listingsStore.listings)
@@ -255,7 +253,7 @@ const dateLabel = computed(() => {
 
 const hasActiveFilters = computed(() => {
   return filters.value.minPrice || filters.value.maxPrice || 
-         filters.value.minRating > 0 || filters.value.propertyType
+         filters.value.minRating > 0 || filters.value.amenities.length > 0
 })
 
 let searchTimeout = null
@@ -275,8 +273,8 @@ function performSearch() {
     searchParams.q = searchQuery.value
   }
 
-  if (filters.value.propertyType) {
-    searchParams.category = filters.value.propertyType
+  if (filters.value.amenities.length > 0) {
+    searchParams.category = filters.value.amenities
   }
 
   if (filters.value.minPrice) {
@@ -307,8 +305,13 @@ function performSearch() {
   listingsStore.searchListings(searchParams)
 }
 
-function selectCategory(value) {
-  filters.value.category = value
+function toggleAmenity(value) {
+  const idx = filters.value.amenities.indexOf(value)
+  if (idx === -1) {
+    filters.value.amenities.push(value)
+  } else {
+    filters.value.amenities.splice(idx, 1)
+  }
   performSearch()
 }
 
@@ -319,14 +322,13 @@ function applyFilters() {
 
 function resetFilters() {
   filters.value = {
-    category: '',
+    amenities: [],
     checkIn: '',
     checkOut: '',
     guests: 1,
     minPrice: null,
     maxPrice: null,
-    minRating: 0,
-    propertyType: ''
+    minRating: 0
   }
   performSearch()
 }
@@ -556,13 +558,41 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.rating-options, .type-options {
+.rating-options {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
 }
 
-.rating-btn, .type-btn {
+.amenity-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.amenity-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.amenity-checkbox.active {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+}
+
+.amenity-checkbox input {
+  width: auto;
+}
+
+.rating-btn {
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-white);
   border: 1px solid var(--color-border);
@@ -570,7 +600,7 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.rating-btn.active, .type-btn.active {
+.rating-btn.active {
   background: var(--color-primary);
   color: var(--color-white);
   border-color: var(--color-primary);

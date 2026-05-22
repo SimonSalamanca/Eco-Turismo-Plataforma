@@ -13,5 +13,6 @@ router.get('/:id', authenticate, reservationsController.getReservation);
 router.post('/:id/cancel', authenticate, validateSchema(cancelReservationSchema), reservationsController.cancelReservation);
 router.post('/:id/confirm', authenticate, reservationsController.confirmReservation);
 router.post('/:id/reject', authenticate, validateSchema(rejectReservationSchema), reservationsController.rejectReservation);
+router.post('/:id/complete', authenticate, reservationsController.completeReservation);
 
 module.exports = router;

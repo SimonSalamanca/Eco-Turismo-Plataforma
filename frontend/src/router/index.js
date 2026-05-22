@@ -137,6 +137,11 @@ const routes = [
         path: 'profile',
         name: 'HostProfile',
         component: () => import('@/views/host/HostProfileView.vue')
+      },
+      {
+        path: 'reviews',
+        name: 'HostReviews',
+        component: () => import('@/views/host/HostReviewsView.vue')
       }
     ]
   },

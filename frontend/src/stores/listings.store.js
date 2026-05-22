@@ -11,13 +11,13 @@ export const useListingsStore = defineStore('listings', () => {
   const loading = ref(false)
   const error = ref(null)
   const filters = ref({
-    category: '',
+    amenities: [],
     checkIn: '',
     checkOut: '',
     guests: 1,
-    minPrice: 0,
-    maxPrice: 1000,
-    location: ''
+    minPrice: null,
+    maxPrice: null,
+    minRating: 0
   })
   const pagination = ref({
     page: 1,
@@ -70,11 +70,23 @@ export const useListingsStore = defineStore('listings', () => {
     }
   }
 
+  function cleanParams(params) {
+    const cleaned = {}
+    for (const [key, val] of Object.entries(params)) {
+      if (val === null || val === undefined || val === '' || val === false) continue
+      if (Array.isArray(val) && val.length === 0) continue
+      if (key === 'amenities') continue
+      cleaned[key] = val
+    }
+    return cleaned
+  }
+
   async function searchListings(searchFilters = {}) {
     loading.value = true
     error.value = null
     try {
-      const response = await listingsService.getAll({ ...filters.value, ...searchFilters })
+      const merged = cleanParams({ ...filters.value, ...searchFilters })
+      const response = await listingsService.getAll(merged)
       const data = response.data || response
       const list = Array.isArray(data) ? data : (data.listings || [])
       if (searchFilters.append) {
@@ -108,15 +120,13 @@ export const useListingsStore = defineStore('listings', () => {
 
   function clearFilters() {
     filters.value = {
-      category: '',
+      amenities: [],
       checkIn: '',
       checkOut: '',
       guests: 1,
       minPrice: null,
       maxPrice: null,
-      minRating: 0,
-      location: '',
-      propertyType: ''
+      minRating: 0
     }
     pagination.value.page = 1
     listings.value = []
@@ -151,7 +161,7 @@ export const useListingsStore = defineStore('listings', () => {
   async function deleteListing(id) {
     loading.value = true
     try {
-      await listingsService.delete(id)
+      await listingsService.deleteListing(id)
       listings.value = listings.value.filter(l => l.id !== id)
     } catch (err) {
       error.value = err.message

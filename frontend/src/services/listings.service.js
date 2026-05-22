@@ -31,17 +31,7 @@ export default {
     return data
   },
 
-  async delete(id) {
-    const { data } = await api.delete(`/listings/${id}`)
-    return data
-  },
-
-  async toggleStatus(id) {
-    const { data } = await api.patch(`/listings/${id}/toggle-status`)
-    return data
-  },
-
-  async delete(id) {
+  async deleteListing(id) {
     const { data } = await api.delete(`/listings/${id}`)
     return data
   },
@@ -55,6 +45,11 @@ export default {
 
   async deletePhoto(listingId, photoId) {
     const { data } = await api.delete(`/listings/${listingId}/photos/${photoId}`)
+    return data
+  },
+
+  async toggleStatus(id) {
+    const { data } = await api.patch(`/listings/${id}/toggle-status`)
     return data
   },
 

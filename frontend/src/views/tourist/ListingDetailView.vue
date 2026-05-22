@@ -115,21 +115,7 @@
             <span class="reviews-count">{{ listing.review_count || 0 }} reseñas</span>
           </div>
           <div class="reviews-list">
-            <div v-for="review in listingReviews" :key="review.id" class="review-item">
-              <div class="review-header">
-                <div class="review-avatar">{{ getInitials(review.tourist?.full_name) }}</div>
-                <div class="review-info">
-                  <h4>{{ review.tourist?.full_name || 'Usuario' }}</h4>
-                  <span>{{ formatReviewDate(review.created_at) }}</span>
-                </div>
-                <div class="review-rating">
-                  <svg v-for="i in 5" :key="i" width="12" height="12" viewBox="0 0 24 24" :fill="i <= review.rating ? '#FFD700' : 'none'" stroke="#FFD700">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                  </svg>
-                </div>
-              </div>
-              <p class="review-text">{{ review.comment }}</p>
-            </div>
+            <ReviewCard v-for="review in listingReviews" :key="review.id" :review="review" />
           </div>
         </section>
 
@@ -161,11 +147,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useListingsStore } from '@/stores/listings.store'
-import reviewsService from '@/services/reviews.service'
+import { useReviewsStore } from '@/stores/reviews.store'
+import ReviewCard from '@/components/reviews/ReviewCard.vue'
 
 const route = useRoute()
 const router = useRouter()
 const listingsStore = useListingsStore()
+const reviewsStore = useReviewsStore()
 
 const listing = ref(null)
 const listingReviews = ref([])
@@ -208,32 +196,7 @@ const canBook = computed(() => {
 })
 
 function getCategoryLabel(cat) {
-  const labels = {
-    wifi: 'WiFi',
-    pool: 'Piscina',
-    parking: 'Estacionamiento',
-    kitchen: 'Cocina',
-    ac: 'Aire acondicionado',
-    terrace: 'Terraza',
-    fireplace: 'Chimenea',
-    washer: 'Lavadora',
-    tv: 'TV',
-    grill: 'Parrilla',
-    garden: 'Jardín',
-    pets: 'Mascotas permitidas'
-  }
-  return labels[cat] || cat
-}
-
-function getInitials(name) {
-  if (!name) return 'U'
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
-
-function formatReviewDate(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(date)
+  return cat
 }
 
 function formatPrice(price) {
@@ -260,9 +223,9 @@ onMounted(async () => {
   try {
     const id = route.params.id
     listing.value = await listingsStore.fetchListing(id)
-    
-    const reviewsRes = await reviewsService.getByListing(id)
-    listingReviews.value = reviewsRes.data || []
+
+    const res = await reviewsStore.fetchReviewsByListing(id)
+    listingReviews.value = res.reviews || []
   } catch (err) {
     console.error('Error loading listing:', err)
   } finally {

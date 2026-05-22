@@ -35,11 +35,18 @@
           </div>
           <span class="badge" :class="booking.status">{{ getStatusLabel(booking.status) }}</span>
         </div>
-        <div class="booking-price">
-          <span>${{ formatPrice(booking.total_amount) }}</span>
+          <div class="booking-actions">
+            <span class="booking-price">${{ formatPrice(booking.total_amount) }}</span>
+            <button
+              v-if="booking.status === 'completed'"
+              class="btn-review"
+              @click.stop="goToReview(booking.id)"
+            >
+              Calificar
+            </button>
+          </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 
@@ -99,6 +106,10 @@ function goToDetail(id) {
   router.push(`/booking/confirmation/${id}`)
 }
 
+function goToReview(id) {
+  router.push(`/tourist/review/${id}`)
+}
+
 onMounted(async () => {
   await reservationsStore.fetchTouristReservations(activeTab.value)
 })
@@ -121,7 +132,9 @@ onMounted(async () => {
 .badge.confirmed, .badge.completed { background: var(--color-success); color: var(--color-white); }
 .badge.pending { background: var(--color-warning); color: var(--color-white); }
 .badge.cancelled { background: var(--color-danger); color: var(--color-white); }
-.booking-price { display: flex; align-items: flex-start; font-weight: 600; }
+.booking-price { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-weight: 600; white-space: nowrap; }
+.btn-review { padding: 6px 14px; font-size: 12px; background: transparent; border: 1.5px solid var(--color-primary); color: var(--color-primary); border-radius: var(--radius-small); cursor: pointer; white-space: nowrap; }
+.btn-review:active { transform: scale(0.96); }
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: var(--spacing-xxl); color: var(--color-text-secondary); text-align: center; }
 .empty-state svg { margin-bottom: var(--spacing-lg); opacity: 0.5; }
 .empty-state p { font-size: 18px; color: var(--color-text-primary); margin-bottom: var(--spacing-xs); }

@@ -88,6 +88,15 @@ const getHostReservationsByListing = async (req, res, next) => {
   }
 };
 
+const completeReservation = async (req, res, next) => {
+  try {
+    const reservation = await reservationsService.completeReservation(req.params.id);
+    res.json({ success: true, data: reservation, message: 'Reserva marcada como completada' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createReservation,
   getMyReservations,
@@ -96,5 +105,6 @@ module.exports = {
   cancelReservation,
   confirmReservation,
   rejectReservation,
-  getHostReservationsByListing
+  getHostReservationsByListing,
+  completeReservation
 };

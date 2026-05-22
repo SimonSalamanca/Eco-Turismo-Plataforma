@@ -173,7 +173,7 @@ async function deleteListing() {
   if (!confirm('¿Estás seguro de que quieres eliminar este alojamiento?')) return
 
   try {
-    await listingsService.delete(route.params.id)
+    await listingsService.deleteListing(route.params.id)
     router.push('/host/listings')
   } catch (err) {
     console.error('Error deleting listing:', err)
